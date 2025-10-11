@@ -1,4 +1,4 @@
-
+import json
 import google.generativeai as genai
 import os
 import docx
