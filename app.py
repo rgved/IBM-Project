@@ -3,8 +3,9 @@ import json
 import docx
 import fitz  # PyMuPDF for PDF text extraction
 from io import BytesIO
-from model import companion_feedback  # updated model.py function
+from model import companion_feedback  # your feedback function
 import re
+from model import summarise_text  # <-- We'll add this new function in model.py
 
 st.set_page_config(page_title="AI Companion Tutor", layout="wide")
 
@@ -24,6 +25,7 @@ def pdf_to_text(file):
         st.error(f"❌ PDF extraction failed: {e}")
         return ""
 
+
 def docx_to_text(file):
     try:
         doc_obj = docx.Document(file)
@@ -31,6 +33,7 @@ def docx_to_text(file):
     except Exception as e:
         st.error(f"❌ DOCX extraction failed: {e}")
         return ""
+
 
 def detect_question(line):
     keywords = [
@@ -40,6 +43,7 @@ def detect_question(line):
     ]
     pattern = r'(\?$|:\s*$|' + "|".join(keywords) + r')'
     return re.search(pattern, line.strip(), flags=re.IGNORECASE)
+
 
 def smart_parse_text_to_json(raw_text):
     raw_text = re.sub(r'\n+', '\n', raw_text.strip())
@@ -70,75 +74,108 @@ def smart_parse_text_to_json(raw_text):
         })
     return questions
 
+
 # ---------------------------
-# Companion Mode UI
+# Main UI
 # ---------------------------
 st.title("🤝 StudBot - AI Companion Tutor")
-st.write("Get guided feedback on your answers and learn how to improve!")
+st.write("Your AI-powered learning partner for guided feedback or summaries!")
 
-upload_option = st.radio("Choose Input Method", ["✏️ Manual Input", "📂 Upload File"])
+mode = st.radio("Choose Mode", ["🎓 Guidance Mode", "🧾 Summarizer Mode"])
 
-question = ""
-student_answer = ""
-correct_answer = ""
+# ===============================
+# GUIDANCE MODE
+# ===============================
+if mode == "🎓 Guidance Mode":
+    st.subheader("✏️ Guidance Mode - Get feedback on your answers")
+    upload_option = st.radio("Choose Input Method", ["Manual Input", "Upload File"])
 
-# --- Manual Input ---
-if upload_option == "✏️ Manual Input":
-    question = st.text_area("Enter your Question")
-    student_answer = st.text_area("Enter your Answer")
-    correct_answer = st.text_area("Correct Answer (optional, for better guidance)")
+    question = ""
+    student_answer = ""
+    correct_answer = ""
 
-# --- File Upload ---
-elif upload_option == "📂 Upload File":
-    file = st.file_uploader("Upload a JSON, PDF, or DOCX file", type=["json", "pdf", "docx"])
-    if file:
-        st.success(f"✅ Uploaded: {file.name}")
-        if file.name.endswith(".pdf"):
-            raw_text = pdf_to_text(file)
-            parsed = smart_parse_text_to_json(raw_text)
-        elif file.name.endswith(".docx"):
-            raw_text = docx_to_text(file)
-            parsed = smart_parse_text_to_json(raw_text)
-        elif file.name.endswith(".json"):
-            parsed = json.load(file)
+    # --- Manual Input ---
+    if upload_option == "Manual Input":
+        question = st.text_area("Enter your Question")
+        student_answer = st.text_area("Enter your Answer")
+        correct_answer = st.text_area("Correct Answer (optional, for better guidance)")
+
+    # --- File Upload ---
+    elif upload_option == "Upload File":
+        file = st.file_uploader("Upload a JSON, PDF, or DOCX file", type=["json", "pdf", "docx"])
+        if file:
+            st.success(f"✅ Uploaded: {file.name}")
+            if file.name.endswith(".pdf"):
+                raw_text = pdf_to_text(file)
+                parsed = smart_parse_text_to_json(raw_text)
+            elif file.name.endswith(".docx"):
+                raw_text = docx_to_text(file)
+                parsed = smart_parse_text_to_json(raw_text)
+            elif file.name.endswith(".json"):
+                parsed = json.load(file)
+            else:
+                parsed = []
+
+            if parsed:
+                q_idx = st.number_input("Select Question Index", min_value=1, max_value=len(parsed), value=1)
+                selected = parsed[q_idx - 1]
+                question = selected.get("question", "")
+                student_answer = selected.get("student_answer", "")
+                correct_answer = selected.get("correct_answer", "")
+
+                st.write(f"**Question:** {question}")
+                st.write(f"**Student Answer:** {student_answer}")
+
+    max_score = st.number_input("Max Score", min_value=1, max_value=10, value=5)
+
+    if st.button("Get Guidance"):
+        if not question or not student_answer:
+            st.warning("Please provide a question and your answer.")
         else:
-            parsed = []
+            with st.spinner("Generating feedback..."):
+                result = companion_feedback(question, student_answer, correct_answer, max_score)
 
-        if parsed:
-            q_idx = st.number_input("Select Question Index", min_value=1, max_value=len(parsed), value=1)
-            selected = parsed[q_idx - 1]
-            question = selected.get("question", "")
-            student_answer = selected.get("student_answer", "")
-            correct_answer = selected.get("correct_answer", "")
+            st.subheader("📢 Feedback")
+            st.write(result.get("feedback", "No feedback available"))
 
-            st.write(f"**Question:** {question}")
-            st.write(f"**Student Answer:** {student_answer}")
+            st.subheader("🔑 Keywords for a Perfect Answer")
+            keywords = result.get("keywords", [])
+            st.write(", ".join(keywords) if keywords else "No keywords found")
 
-max_score = st.number_input("Max Score", min_value=1, max_value=10, value=5)
+            st.subheader("🚀 Steps to Improve")
+            steps = result.get("improvement_steps", [])
+            if steps:
+                for step in steps:
+                    st.markdown(f"- {step}")
+            else:
+                st.write("No improvement steps available")
 
-# --- Generate Feedback ---
-if st.button("Get Guidance"):
-    if not question or not student_answer:
-        st.warning("Please provide a question and your answer.")
-    else:
-        with st.spinner("Generating feedback..."):
-            # Call the updated companion_feedback
-            result = companion_feedback(question, student_answer, correct_answer, max_score)
+# ===============================
+# SUMMARIZER MODE
+# ===============================
+elif mode == "🧾 Summarizer Mode":
+    st.subheader("🧠 Summarizer Mode - Get concise summaries of long texts or documents")
 
-        # Display Feedback
-        st.subheader("📢 Feedback")
-        st.write(result.get("feedback", "No feedback available"))
+    summ_option = st.radio("Choose Input Method", ["Manual Input", "Upload File"])
+    user_text = ""
 
-        # Display Keywords
-        st.subheader("🔑 Keywords for a Perfect Answer")
-        keywords = result.get("keywords", [])
-        st.write(", ".join(keywords) if keywords else "No keywords found")
+    if summ_option == "Manual Input":
+        user_text = st.text_area("Paste or type the text you want to summarize")
 
-        # Display Improvement Steps
-        st.subheader("🚀 Steps to Improve")
-        steps = result.get("improvement_steps", [])
-        if steps:
-            for step in steps:
-                st.markdown(f"- {step}")
+    elif summ_option == "Upload File":
+        file = st.file_uploader("Upload a PDF or DOCX file to summarize", type=["pdf", "docx"])
+        if file:
+            st.success(f"✅ Uploaded: {file.name}")
+            if file.name.endswith(".pdf"):
+                user_text = pdf_to_text(file)
+            elif file.name.endswith(".docx"):
+                user_text = docx_to_text(file)
+
+    if st.button("Summarize"):
+        if not user_text.strip():
+            st.warning("Please enter or upload text to summarize.")
         else:
-            st.write("No improvement steps available")
+            with st.spinner("Generating summary..."):
+                summary = summarise_text(user_text)
+            st.subheader("🪄 Summary")
+            st.write(summary if summary else "No summary generated.")
