@@ -128,6 +128,18 @@ if st.button("Get Guidance"):
     else:
         with st.spinner("Generating feedback..."):
             result = companion_feedback(question, student_answer, correct_answer, max_score)
+            
+            # If result is a string (raw JSON), parse it
+            if isinstance(result, str):
+                try:
+                    result = json.loads(result)
+                except Exception:
+                    # fallback if JSON parsing fails
+                    result = {
+                        "feedback": result,
+                        "keywords": [],
+                        "improvement_steps": []
+                    }
 
         feedback = result.get("feedback", "").replace(question, "").replace(student_answer, "")
         st.subheader("📢 Feedback")
