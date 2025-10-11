@@ -63,7 +63,7 @@ Max Score: {max_score}
 
 Give the response in this format:
 
-Feedback: ...
+Summary: ...
 Keywords: ...
 Improvement Steps: ...
 """
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     max_score = int(input("Enter max score (default 5): ") or 5)
 
     reply = companion_feedback(question, student_answer, correct_answer, max_score)
-    print("\n📢 Feedback:\n", reply["feedback"])
+    print("\n📢 Summary:\n", reply["feedback"])
     print("\n🔑 Keywords:\n", ", ".join(reply["keywords"]))
     print("\n🚀 Steps to Improve:\n", "\n".join(f"- {s}" for s in reply["improvement_steps"]))
     doc_text = None
