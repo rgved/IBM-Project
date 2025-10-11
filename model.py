@@ -30,7 +30,10 @@ def extract_text_from_docx(file_path):
 # -------------------------------
 # Companion Feedback
 # -------------------------------
-def companion_feedback(question, student_answer, correct_answer=None, max_score=5):
+def companion_feedback(question, student_answer, correct_answer=None, max_score=5, debug=False):
+    """
+    Returns structured feedback, keywords, and improvement steps.
+    """
     prompt = f"""
 You are a supportive study companion.
 Analyze the student's answer, compare it to the correct answer (if available),
@@ -54,22 +57,29 @@ Improvement Steps: <semicolon-separated steps>
     except Exception as e:
         return {"feedback": f"⚠️ Error: {e}", "keywords": [], "improvement_steps": []}
 
+    if debug:
+        print("🧩 Raw model response:", reply_text)
+
     feedback, keywords, steps = "", [], []
     current = None
 
     for line in reply_text.splitlines():
-        line = line.strip().replace("**", "").lower()
+        line = line.strip()
         if not line:
             continue
-        if line.startswith("feedback:"):
+
+        lower_line = line.lower()
+
+        # Detect section headers more flexibly
+        if "feedback" in lower_line and ":" in line:
             current = "feedback"
-            feedback = line.split("feedback:")[-1].strip()
-        elif line.startswith("keywords:"):
+            feedback = line.split(":", 1)[-1].strip()
+        elif "keywords" in lower_line and ":" in line:
             current = "keywords"
-            keywords = [k.strip() for k in line.split("keywords:")[-1].split(",") if k.strip()]
-        elif line.startswith("improvement steps:"):
+            keywords = [k.strip() for k in line.split(":", 1)[-1].split(",") if k.strip()]
+        elif ("improvement steps" in lower_line or "steps" in lower_line) and ":" in line:
             current = "steps"
-            steps = [s.strip() for s in line.split("improvement steps:")[-1].split(";") if s.strip()]
+            steps = [s.strip() for s in line.split(":", 1)[-1].split(";") if s.strip()]
         else:
             if current == "feedback":
                 feedback += " " + line
@@ -78,22 +88,33 @@ Improvement Steps: <semicolon-separated steps>
             elif current == "steps":
                 steps += [s.strip() for s in line.split(";") if s.strip()]
 
-    return {
-        "feedback": feedback or "No feedback available",
-        "keywords": keywords,
-        "improvement_steps": steps
-    }
+    # Fallbacks if model didn't provide sections
+    if not feedback:
+        feedback = "⚠️ No feedback generated. Try rephrasing your question or answer."
+    if not keywords:
+        keywords = ["No keywords found"]
+    if not steps:
+        steps = ["No improvement steps found"]
+
+    return {"feedback": feedback, "keywords": keywords, "improvement_steps": steps}
 
 # -------------------------------
 # Summariser
 # -------------------------------
-def summarise_text(text):
+def summarise_text(text, debug=False):
     prompt = f"Summarize this in clear, concise points:\n\n{text}"
     try:
         response = model.generate_content(prompt)
-        return response.text.strip() if response and hasattr(response, "text") else "⚠️ No summary generated."
+        summary = response.text.strip() if response and hasattr(response, "text") else ""
     except Exception as e:
         return f"⚠️ Error generating summary: {e}"
+
+    if debug:
+        print("🧩 Raw summary response:", summary)
+
+    if not summary:
+        return "⚠️ No summary generated. Try with shorter or simpler text."
+    return summary
 
 # -------------------------------
 # Test Run
@@ -104,7 +125,7 @@ if __name__ == "__main__":
     student_answer = input("Enter student's answer: ")
     correct_answer = input("Enter correct answer (optional): ") or None
 
-    result = companion_feedback(question, student_answer, correct_answer)
+    result = companion_feedback(question, student_answer, correct_answer, debug=True)
     print("\n📢 Feedback:", result["feedback"])
     print("\n🔑 Keywords:", ", ".join(result["keywords"]))
     print("\n🚀 Steps to Improve:")
