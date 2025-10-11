@@ -1,10 +1,9 @@
-
 import streamlit as st
 import json
 import docx
 import fitz  # PyMuPDF for PDF text extraction
 from io import BytesIO
-from model import companion_feedback  # your function
+from model import companion_feedback  # updated model.py function
 import re
 
 st.set_page_config(page_title="AI Companion Tutor", layout="wide")
@@ -13,12 +12,11 @@ st.set_page_config(page_title="AI Companion Tutor", layout="wide")
 # File Parsing Helpers
 # ---------------------------
 def pdf_to_text(file):
-    """Extract text from a PDF."""
     try:
-        text = ""
         pdf_data = file.read()
         pdf_file = BytesIO(pdf_data)
         doc = fitz.open(stream=pdf_file, filetype="pdf")
+        text = ""
         for page in doc:
             text += page.get_text() + "\n"
         return text.strip()
@@ -27,7 +25,6 @@ def pdf_to_text(file):
         return ""
 
 def docx_to_text(file):
-    """Extract text from a DOCX file."""
     try:
         doc_obj = docx.Document(file)
         return "\n".join([p.text for p in doc_obj.paragraphs if p.text.strip()]).strip()
@@ -36,7 +33,6 @@ def docx_to_text(file):
         return ""
 
 def detect_question(line):
-    """Detect if a line is a question based on keywords or punctuation."""
     keywords = [
         r'\bdefine\b', r'\bdescribe\b', r'\bshow\b', r'\billustrate\b',
         r'\belaborate\b', r'\bexplain\b', r'\bgive\b',
@@ -46,7 +42,6 @@ def detect_question(line):
     return re.search(pattern, line.strip(), flags=re.IGNORECASE)
 
 def smart_parse_text_to_json(raw_text):
-    """Parse raw text into question-answer JSON."""
     raw_text = re.sub(r'\n+', '\n', raw_text.strip())
     lines = raw_text.split("\n")
     questions, current_q, current_a = [], None, []
@@ -122,13 +117,12 @@ elif upload_option == "📂 Upload File":
 max_score = st.number_input("Max Score", min_value=1, max_value=10, value=5)
 
 # --- Generate Feedback ---
-import json
 if st.button("Get Guidance"):
     if not question or not student_answer:
         st.warning("Please provide a question and your answer.")
     else:
         with st.spinner("Generating feedback..."):
-            # Get feedback from your model
+            # Call the updated companion_feedback
             result = companion_feedback(question, student_answer, correct_answer, max_score)
 
         # Display Feedback
@@ -148,8 +142,3 @@ if st.button("Get Guidance"):
                 st.markdown(f"- {step}")
         else:
             st.write("No improvement steps available")
-   
-       
-
-        
-           
