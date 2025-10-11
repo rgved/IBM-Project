@@ -73,7 +73,7 @@ def smart_parse_text_to_json(raw_text):
 # ---------------------------
 # Companion Mode UI
 # ---------------------------
-st.title("🤝 AI Companion Tutor")
+st.title("🤝 StudBot - AI Companion Tutor")
 st.write("Get guided feedback on your answers and learn how to improve!")
 
 upload_option = st.radio("Choose Input Method", ["✏️ Manual Input", "📂 Upload File"])
