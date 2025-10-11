@@ -126,8 +126,8 @@ import json
 if st.button("Get Guidance"):
     if not question or not student_answer:
             st.warning("Please provide a question and your answer.")
-        else:
-            with st.spinner("Generating feedback..."):
+    else:
+         with st.spinner("Generating feedback..."):
                 result = companion_feedback(question, student_answer, correct_answer, max_score)
 
             feedback = result.get("feedback", "").replace(question, "").replace(student_answer, "")
@@ -144,5 +144,8 @@ if st.button("Get Guidance"):
                 for step in steps:
                     st.markdown(f"- {step}")
             else:
-                st.write("No improvement steps available")
+                st.write("No improvement steps available")    
        
+
+        
+           
