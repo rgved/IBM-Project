@@ -113,7 +113,7 @@ def export_summary_as_docx(summary_text):
 # ---------------------------
 # Main UI
 # ---------------------------
-st.title("🤝 Stubard - AI Companion Tutor")
+st.title("🤝 StuBard - AI Companion Tutor")
 st.write("Your AI-powered learning partner for guided feedback or summaries!")
 
 mode = st.radio("Choose Mode", ["🎓 Guidance Mode", "🧾 Summarizer Mode"])
