@@ -4,22 +4,18 @@ import os
 import docx
 import fitz  # PyMuPDF for PDF text extraction
 
-os.environ["GOOGLE_API_KEY"] = "AIzaSyAnUzWbWlqs8mGl5Uews4MYGg_uPa7Nknk"
-# --------------------------------
+# -------------------------------
 # Gemini Setup
-# --------------------------------
+# -------------------------------
+os.environ["GOOGLE_API_KEY"] = "YOUR_API_KEY"
 api_key = os.getenv("GOOGLE_API_KEY")
-if not api_key:
-    raise ValueError("Please set your GOOGLE_API_KEY environment variable.")
-
 genai.configure(api_key=api_key)
 
-model_name = "models/gemini-2.5-pro"
-model = genai.GenerativeModel(model_name)
+model = genai.GenerativeModel("models/gemini-2.5-pro")
 
-# --------------------------------
-# Document Text Extraction Helpers
-# --------------------------------
+# -------------------------------
+# File Helpers
+# -------------------------------
 def extract_text_from_pdf(file_path):
     text = ""
     with fitz.open(file_path) as doc:
@@ -29,64 +25,51 @@ def extract_text_from_pdf(file_path):
 
 def extract_text_from_docx(file_path):
     doc = docx.Document(file_path)
-    return "\n".join([para.text for para in doc.paragraphs])
+    return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
 
-def extract_text_from_txt(file_path):
-    with open(file_path, "r", encoding="utf-8") as f:
-        return f.read()
-
-def extract_text_from_file(file_path):
-    if file_path.lower().endswith(".pdf"):
-        return extract_text_from_pdf(file_path)
-    elif file_path.lower().endswith(".docx"):
-        return extract_text_from_docx(file_path)
-    elif file_path.lower().endswith(".txt"):
-        return extract_text_from_txt(file_path)
-    else:
-        return "Unsupported file type."
-
-# --------------------------------
-# Companion Feedback Function
-# --------------------------------
+# -------------------------------
+# Companion Feedback
+# -------------------------------
 def companion_feedback(question, student_answer, correct_answer=None, max_score=5):
-    """
-    Returns human-readable feedback, keywords, and improvement steps.
-    """
     prompt = f"""
-You are a friendly and educational study companion.
-Provide guidance in plain English based on the student's answer.
+You are a supportive study companion.
+Analyze the student's answer, compare it to the correct answer (if available),
+and provide detailed, constructive feedback.
 
 Question: {question}
 Student Answer: {student_answer}
-Correct Answer: {correct_answer or 'N/A'}
+Correct Answer: {correct_answer or "N/A"}
 Max Score: {max_score}
 
-Give the response in this format:
+Respond clearly in this structure:
 
-Feedback: ...
-Keywords: ...
-Improvement Steps: ...
+Feedback: <your feedback here>
+Keywords: <comma-separated key terms>
+Improvement Steps: <semicolon-separated steps>
 """
 
-    response = model.generate_content(prompt).text
+    try:
+        response = model.generate_content(prompt)
+        reply_text = response.text if response and hasattr(response, "text") else ""
+    except Exception as e:
+        return {"feedback": f"⚠️ Error: {e}", "keywords": [], "improvement_steps": []}
 
-    # Parse the model output into sections
     feedback, keywords, steps = "", [], []
     current = None
 
-    for line in response.splitlines():
-        line = line.strip()
+    for line in reply_text.splitlines():
+        line = line.strip().replace("**", "").lower()
         if not line:
             continue
-        if line.lower().startswith("feedback:"):
+        if line.startswith("feedback:"):
             current = "feedback"
-            feedback = line[len("feedback:"):].strip()
-        elif line.lower().startswith("keywords:"):
+            feedback = line.split("feedback:")[-1].strip()
+        elif line.startswith("keywords:"):
             current = "keywords"
-            keywords = [k.strip() for k in line[len("keywords:"):].split(",") if k.strip()]
-        elif line.lower().startswith("improvement steps:"):
+            keywords = [k.strip() for k in line.split("keywords:")[-1].split(",") if k.strip()]
+        elif line.startswith("improvement steps:"):
             current = "steps"
-            steps = [s.strip() for s in line[len("improvement steps:"):].split(";") if s.strip()]
+            steps = [s.strip() for s in line.split("improvement steps:")[-1].split(";") if s.strip()]
         else:
             if current == "feedback":
                 feedback += " " + line
@@ -100,37 +83,30 @@ Improvement Steps: ...
         "keywords": keywords,
         "improvement_steps": steps
     }
-def summarise_text(text):
-    """Summarize the given text into short, clear points."""
-    prompt = f"""
-Summarize the following text in clear, concise English.
-Avoid unnecessary details and focus on the main ideas.
 
-Text:
-{text}
-"""
+# -------------------------------
+# Summariser
+# -------------------------------
+def summarise_text(text):
+    prompt = f"Summarize this in clear, concise points:\n\n{text}"
     try:
         response = model.generate_content(prompt)
-        return response.text.strip()
+        return response.text.strip() if response and hasattr(response, "text") else "⚠️ No summary generated."
     except Exception as e:
         return f"⚠️ Error generating summary: {e}"
 
-
-# --------------------------------
-# Test Mode
-# --------------------------------
+# -------------------------------
+# Test Run
+# -------------------------------
 if __name__ == "__main__":
     print("🧠 Gemini Companion Test")
     question = input("Enter your question: ")
     student_answer = input("Enter student's answer: ")
     correct_answer = input("Enter correct answer (optional): ") or None
-    max_score = int(input("Enter max score (default 5): ") or 5)
 
-    reply = companion_feedback(question, student_answer, correct_answer, max_score)
-    print("\n📢 Feedback:\n", reply["feedback"])
-    print("\n🔑 Keywords:\n", ", ".join(reply["keywords"]))
-    print("\n🚀 Steps to Improve:\n", "\n".join(f"- {s}" for s in reply["improvement_steps"]))
-    doc_text = None
-    
-    reply = companion_feedback(user_input, doc_text)
-    print("\n🤖 Companion says:\n", reply)
+    result = companion_feedback(question, student_answer, correct_answer)
+    print("\n📢 Feedback:", result["feedback"])
+    print("\n🔑 Keywords:", ", ".join(result["keywords"]))
+    print("\n🚀 Steps to Improve:")
+    for s in result["improvement_steps"]:
+        print("-", s)
