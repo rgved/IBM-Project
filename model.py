@@ -7,7 +7,7 @@ import fitz  # PyMuPDF for PDF text extraction
 # -------------------------------
 # Gemini Setup
 # -------------------------------
-os.environ["GOOGLE_API_KEY"] = "YOUR_API_KEY"
+os.environ["GOOGLE_API_KEY"] = "AIzaSyAnUzWbWlqs8mGl5Uews4MYGg_uPa7Nknk"
 api_key = os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=api_key)
 
