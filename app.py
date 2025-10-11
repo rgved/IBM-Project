@@ -123,36 +123,26 @@ max_score = st.number_input("Max Score", min_value=1, max_value=10, value=5)
 
 # --- Generate Feedback ---
 import json
-
 if st.button("Get Guidance"):
     if not question or not student_answer:
-        st.warning("Please provide a question and your answer.")
-    else:
-        with st.spinner("Generating feedback..."):
-            raw_result = companion_feedback(question, student_answer, correct_answer, max_score)
-
-            # Ensure we have a dict
-            try:
-                result = json.loads(raw_result)
-            except (TypeError, json.JSONDecodeError):
-                result = {"feedback": raw_result, "keywords": [], "improvement_steps": []}
-
-        # Display feedback
-        st.subheader("📢 Feedback")
-        st.write(result.get("feedback", "No feedback available"))
-
-
-        # Display keywords
-        keywords = result.get("keywords", [])
-        st.subheader("🔑 Keywords for a Perfect Answer")
-        st.write(", ".join(result.get("keywords", [])) if result.get("keywords") else "No keywords found")
-        
-        st.subheader("🚀 Steps to Improve")
-        steps = result.get("improvement_steps", [])
-        if steps:
-            for step in steps:
-                st.markdown(f"- {step}")
+            st.warning("Please provide a question and your answer.")
         else:
-            st.write("No improvement steps available")
+            with st.spinner("Generating feedback..."):
+                result = companion_feedback(question, student_answer, correct_answer, max_score)
 
+            feedback = result.get("feedback", "").replace(question, "").replace(student_answer, "")
+            st.subheader("📢 Feedback")
+            st.write(feedback if feedback else "No feedback available")
 
+            keywords = result.get("keywords", [])
+            st.subheader("🔑 Keywords for a Perfect Answer")
+            st.write(", ".join(keywords) if keywords else "No keywords found")
+
+            steps = result.get("improvement_steps", [])
+            st.subheader("🚀 Steps to Improve")
+            if steps:
+                for step in steps:
+                    st.markdown(f"- {step}")
+            else:
+                st.write("No improvement steps available")
+       
