@@ -3,9 +3,11 @@ import json
 import docx
 import fitz  # PyMuPDF for PDF text extraction
 from io import BytesIO
-from model import companion_feedback  # your feedback function
+from model import companion_feedback, summarise_text  # functions from model.py
 import re
-from model import summarise_text  # <-- We'll add this new function in model.py
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from docx import Document
 
 st.set_page_config(page_title="AI Companion Tutor", layout="wide")
 
@@ -73,6 +75,39 @@ def smart_parse_text_to_json(raw_text):
             "correct_answer": ""
         })
     return questions
+
+
+# ---------------------------
+# Export Helpers
+# ---------------------------
+def export_summary_as_pdf(summary_text):
+    """Generate a downloadable PDF from summary text."""
+    pdf_buffer = BytesIO()
+    c = canvas.Canvas(pdf_buffer, pagesize=letter)
+    width, height = letter
+    y = height - 50
+
+    for line in summary_text.split('\n'):
+        if y < 50:
+            c.showPage()
+            y = height - 50
+        c.drawString(50, y, line)
+        y -= 15
+    c.save()
+    pdf_buffer.seek(0)
+    return pdf_buffer
+
+
+def export_summary_as_docx(summary_text):
+    """Generate a downloadable DOCX file from summary text."""
+    doc = Document()
+    doc.add_heading("AI Summary", level=1)
+    for para in summary_text.split("\n"):
+        doc.add_paragraph(para)
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
 
 
 # ---------------------------
@@ -177,5 +212,26 @@ elif mode == "🧾 Summarizer Mode":
         else:
             with st.spinner("Generating summary..."):
                 summary = summarise_text(user_text)
+
             st.subheader("🪄 Summary")
             st.write(summary if summary else "No summary generated.")
+
+            # --- Export Buttons ---
+            if summary:
+                col1, col2 = st.columns(2)
+                with col1:
+                    pdf_buffer = export_summary_as_pdf(summary)
+                    st.download_button(
+                        label="📄 Download Summary as PDF",
+                        data=pdf_buffer,
+                        file_name="summary.pdf",
+                        mime="application/pdf"
+                    )
+                with col2:
+                    docx_buffer = export_summary_as_docx(summary)
+                    st.download_button(
+                        label="📝 Download Summary as DOCX",
+                        data=docx_buffer,
+                        file_name="summary.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    )
