@@ -125,26 +125,30 @@ max_score = st.number_input("Max Score", min_value=1, max_value=10, value=5)
 import json
 if st.button("Get Guidance"):
     if not question or not student_answer:
-            st.warning("Please provide a question and your answer.")
+        st.warning("Please provide a question and your answer.")
     else:
-         with st.spinner("Generating feedback..."):
-                result = companion_feedback(question, student_answer, correct_answer, max_score)
+        with st.spinner("Generating feedback..."):
+            # Get feedback from your model
+            result = companion_feedback(question, student_answer, correct_answer, max_score)
 
-            feedback = result.get("feedback", "").replace(question, "").replace(student_answer, "")
-            st.subheader("📢 Feedback")
-            st.write(feedback if feedback else "No feedback available")
+        # Display Feedback
+        st.subheader("📢 Feedback")
+        st.write(result.get("feedback", "No feedback available"))
 
-            keywords = result.get("keywords", [])
-            st.subheader("🔑 Keywords for a Perfect Answer")
-            st.write(", ".join(keywords) if keywords else "No keywords found")
+        # Display Keywords
+        st.subheader("🔑 Keywords for a Perfect Answer")
+        keywords = result.get("keywords", [])
+        st.write(", ".join(keywords) if keywords else "No keywords found")
 
-            steps = result.get("improvement_steps", [])
-            st.subheader("🚀 Steps to Improve")
-            if steps:
-                for step in steps:
-                    st.markdown(f"- {step}")
-            else:
-                st.write("No improvement steps available")    
+        # Display Improvement Steps
+        st.subheader("🚀 Steps to Improve")
+        steps = result.get("improvement_steps", [])
+        if steps:
+            for step in steps:
+                st.markdown(f"- {step}")
+        else:
+            st.write("No improvement steps available")
+   
        
 
         
