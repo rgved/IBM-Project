@@ -55,56 +55,43 @@ def extract_text_from_file(file_path):
 # --------------------------------
 # Companion Feedback Function
 # --------------------------------
-def companion_feedback(question, student_answer, correct_answer="", max_score=5, document_text=None):
+def companion_feedback(user_input, student_answer=None, correct_answer=None, max_score=5):
     """
-    question: str
-    student_answer: str
-    correct_answer: str (optional)
-    max_score: int (optional)
-    document_text: str (optional), content from uploaded file
+    AI companion mode: friendly, educational guidance.
+    Returns a dictionary with keys: feedback, keywords, improvement_steps.
     """
     context = ""
-    if document_text:
-        context = f"\nThe user has also provided a document with this content:\n{document_text[:4000]}\n\n"
+    if student_answer:
+        context += f"\nStudent Answer: {student_answer}"
+    if correct_answer:
+        context += f"\nCorrect Answer: {correct_answer}"
 
     prompt = f"""
 You are a friendly and knowledgeable study companion.
-Your goal is to help the user understand and improve their knowledge through conversation.
+Provide guidance in JSON format with keys:
+- feedback: concise feedback on the student's answer
+- keywords: list of important keywords for a perfect answer
+- improvement_steps: actionable steps to improve
 
-Guidelines:
-- Explain clearly and politely.
-- If the user's message refers to a document, use the document context to give accurate help.
-- If you don't know, admit it but guide them where to look.
-- Keep responses short, warm, and easy to understand.
-- Review the student's answer: "{student_answer}".
-- If a correct answer is provided, compare and suggest improvements.
-- Provide a score out of {max_score}.
-- Also give 3-5 keywords the student should know.
-- Give 3 steps to improve the answer.
-- Structure your output in JSON like this:
-  {{
-    "feedback": "...",
-    "keywords": ["...", "..."],
-    "improvement_steps": ["...", "..."]
-  }}
-
-Question: {question}
+User Question: {user_input}
 {context}
+Max Score: {max_score}
+
+Respond ONLY in JSON format.
 """
-    response = model.generate_content(prompt)
-    
-    # Try parsing JSON from response
-    import json
+
+    response = model.generate_content(prompt).text.strip()
+
+    # Ensure we return a dictionary
     try:
-        return json.loads(response.text.strip())
-    except Exception:
-        # fallback if parsing fails
+        return json.loads(response)
+    except json.JSONDecodeError:
+        # fallback if the model didn't return proper JSON
         return {
-            "feedback": response.text.strip(),
+            "feedback": response,
             "keywords": [],
             "improvement_steps": []
         }
-
 
 # --------------------------------
 # Test Mode
