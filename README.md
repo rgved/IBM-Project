@@ -13,8 +13,12 @@ An interactive AI-powered companion that provides **guided feedback** on your an
   - Provides step-by-step suggestions for improvement.
 
 - **Supports multiple file types**: PDF, DOCX, JSON.  
-- **Secure API key management**: Supports Google Gemini API via environment variables.  
+- **Secure API key management**: Supports Google Gemini API via environment variables.
+
+  
+- **Use the GRADING DOC Folder while testing on Streamlit.**
 
 ---
+
 
 
