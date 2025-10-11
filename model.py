@@ -100,6 +100,28 @@ Improvement Steps: ...
         "keywords": keywords,
         "improvement_steps": steps
     }
+def summarize_text(text, summary_length="short"):
+    """
+    Summarizes the given text into a concise summary using Gemini.
+    summary_length can be 'short', 'medium', or 'detailed'.
+    """
+    if not text.strip():
+        return "No text provided for summarization."
+
+    prompt = f"""
+You are a helpful study assistant.
+Summarize the following text in {summary_length} form.
+Make sure the summary is clear, concise, and preserves key meaning.
+
+Text:
+{text}
+"""
+
+    try:
+        response = model.generate_content(prompt).text
+        return response.strip()
+    except Exception as e:
+        return f"⚠️ Summarization failed: {str(e)}"
 
 # --------------------------------
 # Test Mode
