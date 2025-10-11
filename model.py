@@ -55,44 +55,60 @@ def extract_text_from_file(file_path):
 # --------------------------------
 # Companion Feedback Function
 # --------------------------------
-def companion_feedback(user_input, student_answer=None, correct_answer=None, max_score=5):
+def companion_feedback(question, student_answer, correct_answer=None, max_score=5):
     """
-    AI companion mode: friendly, educational guidance.
-    Returns a dictionary with keys: feedback, keywords, improvement_steps.
+    Returns human-readable feedback text, keywords, and improvement steps as strings/lists.
     """
-    context = ""
-    if student_answer:
-        context += f"\nStudent Answer: {student_answer}"
-    if correct_answer:
-        context += f"\nCorrect Answer: {correct_answer}"
+    user_input = f"Question: {question}\nStudent Answer: {student_answer}\nCorrect Answer: {correct_answer}\nMax Score: {max_score}"
 
     prompt = f"""
-You are a friendly and knowledgeable study companion.
-Provide guidance in JSON format with keys:
-- feedback: concise feedback on the student's answer
-- keywords: list of important keywords for a perfect answer
-- improvement_steps: actionable steps to improve
+You are a friendly study companion.
+Provide guidance in plain English:
+- Feedback: tell the student how they did.
+- Keywords: give a few key points they should include.
+- Improvement Steps: suggest steps to improve their answer.
 
-User Question: {user_input}
-{context}
-Max Score: {max_score}
+Format your response like this (but in natural English, not JSON):
 
-Respond ONLY in JSON format.
+Feedback: ...
+Keywords: ...
+Improvement Steps: ...
 """
 
-    response = model.generate_content(prompt).text.strip()
+    response = model.generate_content(prompt).text
 
-    # Ensure we return a dictionary
-    try:
-        return json.loads(response)
-    except json.JSONDecodeError:
-        # fallback if the model didn't return proper JSON
-        return {
-            "feedback": response,
-            "keywords": [],
-            "improvement_steps": []
-        }
+    # Parse response into separate sections
+    feedback, keywords, steps = "", [], []
 
+    # Extract sections using simple string parsing
+    lines = response.splitlines()
+    current = None
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        if line.lower().startswith("feedback:"):
+            current = "feedback"
+            feedback = line[len("feedback:"):].strip()
+        elif line.lower().startswith("keywords:"):
+            current = "keywords"
+            keywords = [k.strip() for k in line[len("keywords:"):].split(",") if k.strip()]
+        elif line.lower().startswith("improvement steps:"):
+            current = "steps"
+            steps = [s.strip() for s in line[len("improvement steps:"):].split(";") if s.strip()]
+        else:
+            if current == "feedback":
+                feedback += " " + line
+            elif current == "keywords":
+                keywords += [k.strip() for k in line.split(",") if k.strip()]
+            elif current == "steps":
+                steps += [s.strip() for s in line.split(";") if s.strip()]
+
+    return {
+        "feedback": feedback,
+        "keywords": keywords,
+        "improvement_steps": steps
+    }
 # --------------------------------
 # Test Mode
 # --------------------------------
