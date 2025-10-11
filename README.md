@@ -16,9 +16,10 @@ An interactive AI-powered companion that provides **guided feedback** on your an
 - **Secure API key management**: Supports Google Gemini API via environment variables.
 
   
-- **Use the GRADING DOC Folder while testing on Streamlit.**
+## Use the GRADING DOC Folder while testing on Streamlit.**
 
 ---
+
 
 
 
