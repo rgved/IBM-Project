@@ -55,10 +55,13 @@ def extract_text_from_file(file_path):
 # --------------------------------
 # Companion Feedback Function
 # --------------------------------
-def companion_feedback(user_input, document_text=None):
+def companion_feedback(question, student_answer, correct_answer="", max_score=5, document_text=None):
     """
-    AI companion mode: friendly, educational guidance.
-    Optionally uses uploaded document content for context.
+    question: str
+    student_answer: str
+    correct_answer: str (optional)
+    max_score: int (optional)
+    document_text: str (optional), content from uploaded file
     """
     context = ""
     if document_text:
@@ -73,14 +76,35 @@ Guidelines:
 - If the user's message refers to a document, use the document context to give accurate help.
 - If you don't know, admit it but guide them where to look.
 - Keep responses short, warm, and easy to understand.
-- Also give the student marks based on the entered answer, so they know how well they are doing. For example, Say: 'I would grade this: 9.5/10'
+- Review the student's answer: "{student_answer}".
+- If a correct answer is provided, compare and suggest improvements.
+- Provide a score out of {max_score}.
+- Also give 3-5 keywords the student should know.
+- Give 3 steps to improve the answer.
+- Structure your output in JSON like this:
+  {{
+    "feedback": "...",
+    "keywords": ["...", "..."],
+    "improvement_steps": ["...", "..."]
+  }}
 
-User message: {user_input}
+Question: {question}
 {context}
 """
-
     response = model.generate_content(prompt)
-    return response.text.strip()
+    
+    # Try parsing JSON from response
+    import json
+    try:
+        return json.loads(response.text.strip())
+    except Exception:
+        # fallback if parsing fails
+        return {
+            "feedback": response.text.strip(),
+            "keywords": [],
+            "improvement_steps": []
+        }
+
 
 # --------------------------------
 # Test Mode
