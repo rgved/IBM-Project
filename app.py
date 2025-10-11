@@ -138,21 +138,21 @@ if st.button("Get Guidance"):
                 result = {"feedback": raw_result, "keywords": [], "improvement_steps": []}
 
         # Display feedback
-        feedback = result.get("feedback", "").replace(question, "").replace(student_answer, "")
         st.subheader("📢 Feedback")
-        st.write(feedback if feedback else "No feedback available")
+        st.write(result.get("feedback", "No feedback available"))
+
 
         # Display keywords
         keywords = result.get("keywords", [])
         st.subheader("🔑 Keywords for a Perfect Answer")
-        st.write(", ".join(keywords) if keywords else "No keywords found")
-
-        # Display improvement steps
-        steps = result.get("improvement_steps", [])
+        st.write(", ".join(result.get("keywords", [])) if result.get("keywords") else "No keywords found")
+        
         st.subheader("🚀 Steps to Improve")
+        steps = result.get("improvement_steps", [])
         if steps:
             for step in steps:
                 st.markdown(f"- {step}")
         else:
             st.write("No improvement steps available")
+
 
