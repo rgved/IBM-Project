@@ -78,7 +78,7 @@ def smart_parse_text_to_json(raw_text):
 # ---------------------------
 # Main UI
 # ---------------------------
-st.title("🤝 StudBot - AI Companion Tutor")
+st.title("🤝 Stubard - AI Companion Tutor")
 st.write("Your AI-powered learning partner for guided feedback or summaries!")
 
 mode = st.radio("Choose Mode", ["🎓 Guidance Mode", "🧾 Summarizer Mode"])
