@@ -1,4 +1,4 @@
-# 🤝 Studbard Companion Tutor
+# 🤝 StudBard Companion Tutor
 
 An interactive AI-powered companion that provides **guided feedback** on your answers and helps you **learn and improve**. Built with **Streamlit**, this app can analyze text input manually or via uploaded documents and give clear, actionable guidance.
 
@@ -19,6 +19,7 @@ An interactive AI-powered companion that provides **guided feedback** on your an
 ## Use the GRADING DOC Folder while testing on Streamlit.
 
 ---
+
 
 
 
